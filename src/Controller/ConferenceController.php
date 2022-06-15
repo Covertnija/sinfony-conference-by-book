@@ -11,6 +11,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Form\CommentFormType;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+
 
 class ConferenceController extends AbstractController
 {
@@ -34,19 +36,20 @@ class ConferenceController extends AbstractController
     }
 
     #[Route('/conference/{slug}', name: 'conference')]
-    public function show(string $photoDir, Request $request, Conference $conference, CommentRepository $commentRepository): Response
+    public function show(Request $request, Conference $conference, CommentRepository $commentRepository): Response
     {
 
         $comment = new Comment();
         $form = $this->createForm(CommentFormType::class, $comment);
 
         $form->handleRequest($request);
+
         if ($form->isSubmitted() && $form->isValid()) {
             $comment->setConference($conference);
 
             if ($photo = $form['photo']->getData()) {
                 $filename = bin2hex(random_bytes(6)).'.'.$photo->guessExtension();
-                $photo->move($photoDir, $filename);
+                $photo->move($this->photoDir, $filename);
                 $comment->setPhotoFilename($filename);
             }
 
@@ -58,14 +61,13 @@ class ConferenceController extends AbstractController
         $offset = max(0, $request->query->getInt('offset'));
         $paginator = $commentRepository->getCommentPaginator($conference, $offset);
 
-        return new Response(
-            $this->render('conference/show.html.twig', [
+        return $this->renderForm('conference/show.html.twig', [
                 'conference' => $conference,
                 'comments' => $paginator,
                 'previous' => $offset - CommentRepository::PAGINATOR_PER_PAGE,
                 'next' => min(count($paginator), $offset + CommentRepository::PAGINATOR_PER_PAGE),
-                'comment_form' => $form->createView(),
-            ])
+                'comment_form' => $form,
+            ]
         );
     }
 }
