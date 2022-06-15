@@ -22,7 +22,7 @@ class SpamChecker
      */
     public function getSpamScore(Comment $comment, array $context): int
     {
-        $response = $this->akismetClient->request('POST', '/1.1/comment-check', [
+        $response = $this->client->request('POST', '/1.1/comment-check', [
             'body' => array_merge($context, [
                 'blog' => 'https://guestbook.example.com',
                 'comment_type' => 'comment',
